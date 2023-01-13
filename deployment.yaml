@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nega-test-test-dynamic-env
+  labels:
+    name: nega-test-test-dynamic-env
+    tier: backend
+  annotations:
+    reloader.stakater.com/auto: "true"
+    secret.reloader.stakater.com/reload: "nega-test-common-envs,nega-test-test-dynamic-env"
+    configmap.reloader.stakater.com/reload: "nega-test-test-dynamic-env"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      name: nega-test-test-dynamic-env
+      tier: backend
+  template:
+    metadata:
+      labels:
+        name: nega-test-test-dynamic-env
+        tier: backend
+      annotations:
+        vault.security.banzaicloud.io/vault-addr: "https://vault-dev-athena.anuk.tech"
+        vault.security.banzaicloud.io/vault-role: "nega-test-user-log-role"
+        vault.security.banzaicloud.io/vault-skip-verify: "true"
+        vault.security.banzaicloud.io/vault-agent: "false"
+        vault.security.banzaicloud.io/vault-path: kubernetes
+        vault.security.banzaicloud.io/vault-env-from-path: "envs/nega-test/user-log/"
+        vault.security.banzaicloud.io/vault-env-daemon: "true"
+#        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: nega-test-user-log
+      containers:
+        - name: nega-test-test-dynamic-env
+          image: id7141/testdynenv:v0.0.3
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_ENV
+              value: nega-test-test-dynamic-env
+            - name: DD_ENTITY_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: API_USER
+              value: nega-test-test-dynamic-api-user-WWWEEEEWWWW
+            - name: API_PASSWORD
+              value: nega-test-test-dynamic-api-pass-PPPPPPPHHHGHGHGHH
+          ports:
+            - containerPort: 4000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - configMapRef:
+                name: nega-test-test-dynamic-env
+#          envFrom:
+#            - secretRef:
+#                name: nega-test-test-dynamic-env
+#            - secretRef:
+#                name: nega-test-common-envs
+#          livenessProbe:
+#            httpGet:
+#              path: /system/health-check
+#              port: 4000
+#            initialDelaySeconds: 90
+#            failureThreshold: 3
+#            periodSeconds: 30
+#            timeoutSeconds: 5
+#          readinessProbe:
+#            httpGet:
+#              path: /system/ready
+#              port: 4000
+#            initialDelaySeconds: 60
+#            failureThreshold: 3
+#            periodSeconds: 30
+#            timeoutSeconds: 3
+#          volumeMounts:
+#            - name: secret-volume
+#              readOnly: true
+#              mountPath: "/app/key"
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: "nega-test-kuna-key"

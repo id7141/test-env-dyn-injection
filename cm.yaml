@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nega-test-test-dynamic-env
+  annotations:
+    reloader.stakater.com/match: "true"
+data:
+  S3_BUCKET_NAME: envs/nega-test/user-log#S3_BUCKET_NAME
+  PRODUCT_NAME: envs/nega-test/user-log#PRODUCT_NAME
+  VERSION_CM: "2"
